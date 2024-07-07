@@ -8,8 +8,28 @@ A: In the `Game` category of settings.ini, add a tag called `username` and enter
 ### Q: The screen is tearing, how do I fix it?
 A: Try turning on VSync in settings.ini.
 
+### Q: Why aren't videos/filters working while using GL?
+A: There's a mod for it that you have to make. Refer to the following directions:
+
+Create the following directory structure inside your mods directory:
+```
+GLShaders/
+| Data/
+| | ...
+| mod.ini
+```
+
+Inside `mods/GLShaders/Data/`, copy the `RSDKv5/Shaders` directory, and inside the `mod.ini`, paste this:
+```
+Name=GLShaders
+Description=GL3 shaders
+Author=Ducky
+Version=1.0.0
+TargetVersion=5
+```
+
 ### Q: I found a bug/I have a feature request!
-A: Submit an issue in the issues tab and we _might_ fix it in the main branch. Don't expect any major future releases, however.
+A: Submit an issue in the Issues tab and we might look into it. Keep in mind that this is a decompilation, so bugs that exist in official releases will most likely not be fixed here.
 
 # Using Sonic Origins RSDK Files
 ### Q: Why is there no audio?
@@ -24,7 +44,7 @@ There are also checks implemented in the engine to prevent playing as these char
 
 # Miscellaneous
 ### Q: Is there a decompilation for RSDKv3 and/or RSDKv4 alone?
-A: There is! You can find RSDKv3 [here](https://github.com/Rubberduckycooly/Sonic-CD-11-Decompilation) and RSDKv4 [here](https://github.com/Rubberduckycooly/Sonic-1-2-2013-Decompilation).
+A: There is! You can find RSDKv3 [here](https://github.com/RSDKModding/RSDKv3-Decompilation) and RSDKv4 [here](https://github.com/RSDKModding/RSDKv4-Decompilation).
 
 ### Q: Are there anymore decompilation projects in the works, such as other RSDK versions?
 A: Absolutely not. This project took about 1 and a half years to do, and between the last two and this one, we're done with decompiling, at least for the time being. Please do not expect any more decompilations from us, Sonic or otherwise!
