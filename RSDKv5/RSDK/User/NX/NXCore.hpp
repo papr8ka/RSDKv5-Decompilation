@@ -37,7 +37,7 @@ struct NXCore : UserCore {
     bool32 CheckDLC(uint8 id)
     {
         // check we have the DLC
-        return false;
+        return true;
     }
     bool32 ShowExtensionOverlay(uint8 overlay)
     {

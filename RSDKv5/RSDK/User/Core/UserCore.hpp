@@ -79,10 +79,7 @@ struct UserCore {
     virtual bool32 IsOverlayEnabled(uint32 deviceID) { return false; }
     virtual bool32 CheckDLC(uint8 id)
     {
-        if (id < 8)
-            return values[id];
-        else
-            return 0;
+        return true;
     }
 #if RETRO_VER_EGS
     virtual bool32 SetupExtensionOverlay() { return true; }
