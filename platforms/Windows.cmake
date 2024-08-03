@@ -1,9 +1,9 @@
 project(RetroEngine)
 
-add_executable(RetroEngine ${RETRO_FILES})
+add_executable(RetroEngine WIN32 ${RETRO_FILES})
 
 set(RETRO_SUBSYSTEM "DX9" CACHE STRING "The subsystem to use")
-option(USE_PORTAUDIO "Whether or not to use PortAudio or default to XAudio." OFF)
+option(USE_MINIAUDIO "Whether or not to use MiniAudio or default to XAudio." OFF)
 
 set(DEP_PATH windows)
 
@@ -90,7 +90,7 @@ elseif(RETRO_SUBSYSTEM STREQUAL "VK")
 
     find_package(Vulkan REQUIRED)
 
-    target_compile_definitions(RetroEngine VULKAN_USE_GLFW=1)
+    target_compile_definitions(RetroEngine PRIVATE VULKAN_USE_GLFW=1)
     target_link_libraries(RetroEngine
         glfw
         Vulkan::Vulkan
@@ -105,28 +105,11 @@ else()
     message(FATAL_ERROR "RETRO_SUBSYSTEM must be one of DX9, DX11, OGL, VK, or SDL2")
 endif()
 
-if(USE_PORTAUDIO)
+if(USE_MINIAUDIO)
     if(RETRO_SUBSYSTEM STREQUAL "DX9" OR RETRO_SUBSYSTEM STREQUAL "DX11")
         message(FATAL_ERROR "portaudio not supported for DX9 and DX11.")
     endif()
-    find_package(portaudio CONFIG)
-
-    if(NOT portaudio_FOUND)
-        message("could not find portaudio, attempting to build from source")
-
-        if(EXISTS dependencies/all/portaudio)
-            add_subdirectory(dependencies/all/portaudio)
-        else()
-            add_subdirectory(dependencies/${DEP_PATH}/portaudio)
-        endif()
-    else()
-        message("found portaudio")
-        target_link_libraries(RetroEngine 
-            $<IF:$<TARGET_EXISTS:portaudio>,portaudio,portaudio_static>
-        )
-    endif()
-
-    target_compile_definitions(RetroEngine PRIVATE RETRO_AUDIODEVICE_PORT=1)
+    target_compile_definitions(RetroEngine PRIVATE RETRO_AUDIODEVICE_MINI=1)
 endif()
 
 target_compile_definitions(RetroEngine PRIVATE _CRT_SECURE_NO_WARNINGS)
@@ -135,16 +118,8 @@ target_link_libraries(RetroEngine
     comctl32
 )
 
-if(RETRO_MOD_LOADER)
-    set_target_properties(RetroEngine PROPERTIES
-        CXX_STANDARD 17
-        CXX_STANDARD_REQUIRED ON
-    )
-endif()
-
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_compile_options(RetroEngine PRIVATE -Wno-microsoft-cast -Wno-microsoft-exception-spec)
 endif()
     
 target_sources(RetroEngine PRIVATE ${RETRO_NAME}/${RETRO_NAME}.rc)
-target_link_options(RetroEngine PRIVATE /subsystem:windows)

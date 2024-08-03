@@ -16,7 +16,7 @@ if(RETRO_REVISION STREQUAL "3")
     set(RETRO_NAME "RSDKv5U")
 endif()
 
-set(RETRO_OUTPUT_NAME ${RETRO_NAME} CACHE STRING "The exported name")
+set(RETRO_OUTPUT_NAME ${RETRO_NAME} CACHE STRING "The exported name of the executable.")
 
 set(RETRO_FILES
     RSDKv5/main.cpp
@@ -64,6 +64,14 @@ if(NOT PLATFORM)
 endif()
 
 include(platforms/${PLATFORM}.cmake)
+
+# Set C++ standard after including the platform file since they could override mod loader support
+# which relies on C++17. Otherwise the engine is mostly C++11.
+if(RETRO_MOD_LOADER)
+    set_target_properties(RetroEngine PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON)
+else()
+    set_target_properties(RetroEngine PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED ON)
+endif()
 
 set_target_properties(RetroEngine PROPERTIES OUTPUT_NAME ${RETRO_OUTPUT_NAME})
 

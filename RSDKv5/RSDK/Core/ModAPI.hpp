@@ -4,7 +4,9 @@
 #if RETRO_USE_MOD_LOADER
 #include <vector>
 #include <string>
+#include <sstream>
 #include <map>
+#include <regex>
 #include "tinyxml2.h"
 
 #include <functional>
@@ -42,8 +44,8 @@ enum ModSuper {
     SUPER_DRAW,
     SUPER_CREATE,
     SUPER_STAGELOAD,
-    SUPER_EDITORDRAW,
     SUPER_EDITORLOAD,
+    SUPER_EDITORDRAW,
     SUPER_SERIALIZE
 };
 
@@ -236,29 +238,19 @@ inline void SetActiveMod(int32 id) { modSettings.activeMod = id; }
 void InitModAPI(bool32 getVersion = false);
 void UnloadMods();
 void LoadMods(bool newOnly = false, bool32 getVersion = false);
-bool32 LoadMod(ModInfo *info, std::string modsPath, std::string folder, bool32 active, bool32 getVersion = false);
+bool32 LoadMod(ModInfo *info, const std::string& modsPath, const std::string& folder, bool32 active, bool32 getVersion);
 void SaveMods();
 void SortMods();
 void LoadModSettings();
 void ApplyModChanges();
 
-inline std::vector<ModInfo *> ActiveMods()
-{
-    SortMods();
-    std::vector<ModInfo *> ret;
-    for (int32 m = 0; m < modList.size(); ++m) {
-        if (!modList[m].active)
-            break;
-        ret.push_back(&modList.at(m));
-    }
-    return ret;
-}
-
 bool32 ScanModFolder(ModInfo *info, const char *targetFile = nullptr, bool32 fromLoadMod = false, bool32 loadingBar = true);
 inline void RefreshModFolders(bool32 versionOnly = false, bool32 loadingBar = true)
 {
-    int32 activeModCount = (int32)ActiveMods().size();
-    for (int32 m = 0; m < activeModCount; ++m) {
+    SortMods();
+    for (int32 m = 0; m < modList.size(); ++m) {
+        if (!modList[m].active)
+            break;
         ScanModFolder(&modList[m], versionOnly ? "Data/Game/GameConfig.bin" : nullptr, true, loadingBar);
     }
 }
@@ -271,25 +263,25 @@ void ModRegisterGlobalVariables(const char *globalsPath, void **globals, uint32 
 
 void ModRegisterObject(Object **staticVars, Object **modStaticVars, const char *name, uint32 entityClassSize, uint32 staticClassSize,
                        uint32 modClassSize, void (*update)(), void (*lateUpdate)(), void (*staticUpdate)(), void (*draw)(), void (*create)(void *),
-                       void (*stageLoad)(), void (*editorDraw)(), void (*editorLoad)(), void (*serialize)(), void (*staticLoad)(Object *),
+                       void (*stageLoad)(), void (*editorLoad)(), void (*editorDraw)(), void (*serialize)(), void (*staticLoad)(Object *),
                        const char *inherited);
 
 void ModRegisterObject_STD(Object **staticVars, Object **modStaticVars, const char *name, uint32 entityClassSize, uint32 staticClassSize,
                            uint32 modClassSize, std::function<void()> update, std::function<void()> lateUpdate, std::function<void()> staticUpdate,
                            std::function<void()> draw, std::function<void(void *)> create, std::function<void()> stageLoad,
-                           std::function<void()> editorDraw, std::function<void()> editorLoad, std::function<void()> serialize,
+                           std::function<void()> editorLoad, std::function<void()> editorDraw, std::function<void()> serialize,
                            std::function<void(Object *)> staticLoad, const char *inherited);
 #else
 void ModRegisterGlobalVariables(const char *globalsPath, void **globals, uint32 size);
 
 void ModRegisterObject(Object **staticVars, Object **modStaticVars, const char *name, uint32 entityClassSize, uint32 staticClassSize,
                        uint32 modClassSize, void (*update)(), void (*lateUpdate)(), void (*staticUpdate)(), void (*draw)(), void (*create)(void *),
-                       void (*stageLoad)(), void (*editorDraw)(), void (*editorLoad)(), void (*serialize)(), const char *inherited);
+                       void (*stageLoad)(), void (*editorLoad)(), void (*editorDraw)(), void (*serialize)(), const char *inherited);
 
 void ModRegisterObject_STD(Object **staticVars, Object **modStaticVars, const char *name, uint32 entityClassSize, uint32 staticClassSize,
                            uint32 modClassSize, std::function<void()> update, std::function<void()> lateUpdate, std::function<void()> staticUpdate,
                            std::function<void()> draw, std::function<void(void *)> create, std::function<void()> stageLoad,
-                           std::function<void()> editorDraw, std::function<void()> editorLoad, std::function<void()> serialize,
+                           std::function<void()> editorLoad, std::function<void()> editorDraw, std::function<void()> serialize,
                            const char *inherited);
 #endif
 
@@ -298,7 +290,7 @@ Object *ModFindObject(const char *name);
 
 void *GetGlobals();
 
-bool32 LoadModInfo(const char *folder, String *name, String *description, String *version, bool32 *active);
+bool32 LoadModInfo(const char *id, String *name, String *description, String *version, bool32 *active);
 void GetModPath(const char *id, String *result);
 int32 GetModCount(bool32 active);
 const char *GetModIDByIndex(uint32 index);
@@ -338,10 +330,10 @@ void GetAchievementInfo(uint32 id, String *name, String *description, String *id
 int32 GetAchievementIndexByID(const char *id);
 int32 GetAchievementCount();
 
-void StateMachineRun(void (*state)());
-bool32 HandleRunState_HighPriority(void *state);
-void HandleRunState_LowPriority(void *state, bool32 skipState);
-void RegisterStateHook(void (*state)(), bool32 (*hook)(bool32 skippedState), bool32 priority);
+void StateMachineRun(void (*state)(void));
+bool32 HandleRunState_HighPriority(void (*state)(void));
+void HandleRunState_LowPriority(void (*state)(void), bool32 skipState);
+void RegisterStateHook(void (*state)(void), bool32 (*hook)(bool32 skippedState), bool32 priority);
 
 #if RETRO_MOD_LOADER_VER >= 2
 
@@ -517,7 +509,7 @@ class recursive_directory_iterator
     directory_entry current;
 
     jstring jstr;
-    const char* str = nullptr;
+    const char *str = nullptr;
 
     jbyteArray jpath;
 
@@ -527,12 +519,12 @@ public:
     using difference_type   = ptrdiff_t;
     using pointer           = const directory_entry *;
     using reference         = const directory_entry &;
-    
+
     recursive_directory_iterator() = default;
     recursive_directory_iterator(path path, directory_options _)
     {
         (void)_;
-        jni = GetJNISetup();
+        jni   = GetJNISetup();
         jpath = jni->env->NewByteArray(path.string().length());
         jni->env->SetByteArrayRegion(jpath, 0, path.string().length(), (jbyte *)path.string().c_str());
         operator++();
@@ -540,21 +532,14 @@ public:
 
     // this class is modified from the MSVC headers LMAO
 
-    bool operator==(const recursive_directory_iterator& rhs) const noexcept {
-        return jni == rhs.jni;
-    }
-    bool operator!=(const recursive_directory_iterator& rhs) const noexcept {
-        return jni != rhs.jni;
-    }
-    const directory_entry& operator*() const noexcept {
-        return current;
-    }
+    bool operator==(const recursive_directory_iterator &rhs) const noexcept { return jni == rhs.jni; }
+    bool operator!=(const recursive_directory_iterator &rhs) const noexcept { return jni != rhs.jni; }
+    const directory_entry &operator*() const noexcept { return current; }
 
-    const directory_entry* operator->() const noexcept {
-        return &**this;
-    }
+    const directory_entry *operator->() const noexcept { return &**this; }
 
-    recursive_directory_iterator& operator++() {
+    recursive_directory_iterator &operator++()
+    {
         if (str) {
             jni->env->ReleaseStringUTFChars(jstr, str);
         }
@@ -563,20 +548,15 @@ public:
             *this = {};
         }
         else {
-            str = jni->env->GetStringUTFChars(jstr, NULL);
+            str     = jni->env->GetStringUTFChars(jstr, NULL);
             current = directory_entry(fs::path(str));
         }
         return *this;
     }
 
-    inline recursive_directory_iterator begin() noexcept {
-        return *this;
-    }
+    inline recursive_directory_iterator begin() noexcept { return *this; }
 
-    inline recursive_directory_iterator end() noexcept {
-        return {};
-    }
-
+    inline recursive_directory_iterator end() noexcept { return {}; }
 };
 
 }; // namespace fs

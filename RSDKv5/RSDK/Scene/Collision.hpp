@@ -37,7 +37,7 @@ struct DebugHitboxInfo {
     Vector2 pos;
 };
 
-enum DebugHitboxTypes { H_TYPE_TOUCH, H_TYPE_CIRCLE, H_TYPE_BOX, H_TYPE_PLAT };
+enum DebugHitboxTypes { H_TYPE_TOUCH, H_TYPE_CIRCLE, H_TYPE_BOX, H_TYPE_PLAT, H_TYPE_HAMMER };
 
 extern bool32 showHitboxes;
 extern int32 debugHitboxCount;
@@ -86,13 +86,13 @@ inline void SetupCollisionConfig(int32 minDistance, uint8 lowTolerance, uint8 hi
 #if RETRO_REV0U || RETRO_USE_MOD_LOADER
 void CopyCollisionMask(uint16 dst, uint16 src, uint8 cPlane, uint8 cMode);
 
-inline void GetCollisionInfo(CollisionMask **masks, TileInfo **tileInfo)
+inline void GetCollisionInfo(CollisionMask **masks, TileInfo **tiles)
 {
     if (masks)
         *masks = (RSDK::CollisionMask *)collisionMasks;
 
-    if (tileInfo)
-        *tileInfo = (RSDK::TileInfo *)tileInfo;
+    if (tiles)
+        *tiles = (RSDK::TileInfo *)tileInfo;
 }
 #endif
 
